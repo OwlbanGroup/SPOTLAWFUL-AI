@@ -133,7 +133,15 @@ h1.has-background,h2.has-background,h3.has-background,h4.has-background,h5.has-b
 </style>
 <link crossorigin='anonymous' rel='stylesheet' id='all-css-26-1' href='https://s2.wp.com/wp-content/mu-plugins/jetpack-plugin/sun/jetpack_vendor/automattic/jetpack-forms/dist/contact-form/css/grunion.css?m=1742789770i&cssminify=yes' type='text/css' media='all' />
 <style id='wp-block-separator-inline-css'>
-@charset "UTF-8";.wp-block-separator{border:none;border-top:2px solid}:root :where(.wp-block-separator.is-style-dots){height:auto;line-height:1;text-align:center}:root :where(.wp-block-separator.is-style-dots):before{color:currentColor;content:"···";font-family:serif;font-size:1.5em;letter-spacing:2em;padding-left:2em}.wp-block-separator.is-style-dots{background:none!important;border:none!important}
+@charset "UTF-8";
+
+/* Existing CSS rules */
+:root :where(.wp-block-separator) {
+    border-color: currentColor;
+    border-width: 0 0 1px 0;
+    border-style: solid;
+    color: var(--wp--preset--color--contrast);
+} "UTF-8";.wp-block-separator{border:none;border-top:2px solid}:root :where(.wp-block-separator.is-style-dots){height:auto;line-height:1;text-align:center}:root :where(.wp-block-separator.is-style-dots):before{color:currentColor;content:"···";font-family:serif;font-size:1.5em;letter-spacing:2em;padding-left:2em}.wp-block-separator.is-style-dots{background:none!important;border:none!important}
 </style>
 <style id='wp-block-post-title-inline-css'>
 .wp-block-post-title{box-sizing:border-box;word-break:break-word}.wp-block-post-title :where(a){display:inline-block;font-family:inherit;font-size:inherit;font-style:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;text-decoration:inherit}
@@ -451,6 +459,7 @@ var wa_client = {}; wa_client.cmd = []; wa_client.config = { 'blog_id': 22744405
 	font-weight: 100;
 	font-display: fallback;
 	src: url('https://fonts.wp.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyeMZ1rib2Bg-4.woff2') format('woff2');
+	font-stretch: normal; /* This is a valid property */
 }
 </style>
 @font-face{font-family:Inter;font-style:normal;font-weight:200;font-display:fallback;src:url('https://fonts.wp.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuDyfMZ1rib2Bg-4.woff2') format('woff2');}
@@ -470,6 +479,8 @@ var wa_client = {}; wa_client.cmd = []; wa_client.config = { 'blog_id': 22744405
 <link rel="icon" href="https://spotlawful.wordpress.com/wp-content/uploads/2023/12/caa58a32-4e95-4cd8-9ae5-0c082258f2c1.png?w=192" sizes="192x192" />
 <!-- Moved to the <head> section -->
 <meta name="msapplication-TileImage" content="https://spotlawful.wordpress.com/wp-content/uploads/2023/12/caa58a32-4e95-4cd8-9ae5-0c082258f2c1.png?w=270" />
+<!-- Moved to the <head> section -->
+<link rel="apple-touch-icon" href="https://spotlawful.wordpress.com/wp-content/uploads/2023/12/caa58a32-4e95-4cd8-9ae5-0c082258f2c1.png?w=180" />
 <link rel="apple-touch-icon" href="https://spotlawful.wordpress.com/wp-content/uploads/2023/12/caa58a32-4e95-4cd8-9ae5-0c082258f2c1.png?w=180" />
 <script type="text/javascript">
 	window.google_analytics_uacct = "UA-52447-2";
