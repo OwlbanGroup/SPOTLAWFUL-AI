@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SPOTLAWFUL AI Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>SPOTLAWFUL AI Demo Interface</h1>
+  </header>
+  <main>
+    <section id="subscription">
+      <h2>User Subscription</h2>
+      <input type="text" id="userIdInput" placeholder="Enter User ID" />
+      <button id="subscribeBtn">Subscribe</button>
+      <button id="unsubscribeBtn">Unsubscribe</button>
+      <p id="subscriptionMessage"></p>
+    </section>
+
+    <section id="legalAnalysis">
+      <h2>Legal Text Analysis</h2>
+      <textarea id="legalTextInput" placeholder="Enter legal text here"></textarea>
+      <button id="analyzeBtn">Analyze</button>
+      <pre id="analysisResult"></pre>
+    </section>
+
+    <section id="feedbackSection">
+      <h2>User Feedback</h2>
+      <textarea id="feedbackInput" placeholder="Enter your feedback"></textarea>
+      <button id="sendFeedbackBtn">Send Feedback</button>
+      <p id="feedbackMessage"></p>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
