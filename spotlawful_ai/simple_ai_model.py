@@ -18,3 +18,8 @@ class SimpleAIModel:
         if self.weights is None:
             raise ValueError("Model has not been trained yet.")
         return np.dot(x, self.weights)
+
+    def parse(self, text, hierarchical=False):
+        # Dummy parse implementation for testing
+        # Return a list of nodes with 'text' keys to simulate parse tree
+        return [{"text": text, "children": []}]

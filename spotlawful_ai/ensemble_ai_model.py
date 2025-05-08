@@ -14,3 +14,10 @@ class EnsembleAIModel:
         # Aggregate predictions from all models by averaging
         predictions = np.array([model.predict(x) for model in self.models])
         return np.mean(predictions, axis=0)
+
+    def parse(self, text, hierarchical=False):
+        # Delegate parse to the first model if it has parse method
+        if hasattr(self.models[0], 'parse'):
+            return self.models[0].parse(text, hierarchical=hierarchical)
+        else:
+            raise NotImplementedError("Parse method is not implemented in the underlying models.")

@@ -1,6 +1,6 @@
 
 from flask import Flask, request, jsonify
-from .enhanced_legal_ai import EnhancedLegalAI
+from spotlawful_ai.enhanced_legal_ai import EnhancedLegalAI
 
 app = Flask(__name__)
 
