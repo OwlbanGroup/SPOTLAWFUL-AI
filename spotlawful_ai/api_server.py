@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
-from legal_analytics_service import LegalAnalyticsService, SubscriptionManager
-from legal_document_analysis import LegalDocumentAnalysis
-from parsing_syntax_grammar_ai import ParsingSyntaxGrammarAI
-from revenue_optimizer import RevenueOptimizer
+from spotlawful_ai.legal_analytics_service import LegalAnalyticsService, SubscriptionManager
+from spotlawful_ai.legal_document_analysis import LegalDocumentAnalysis
+from spotlawful_ai.parsing_syntax_grammar_ai import ParsingSyntaxGrammarAI
+from spotlawful_ai.revenue_optimizer import RevenueOptimizer
 import pandas as pd
 
 app = Flask(__name__)

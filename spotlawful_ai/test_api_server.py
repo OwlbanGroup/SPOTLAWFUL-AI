@@ -1,6 +1,6 @@
 import unittest
 import json
-from api_server import app
+from spotlawful_ai.api_server import app
 
 class ApiServerTestCase(unittest.TestCase):
     def setUp(self):
