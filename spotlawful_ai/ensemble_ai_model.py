@@ -21,3 +21,20 @@ class EnsembleAIModel:
             return self.models[0].parse(text, hierarchical=hierarchical)
         else:
             raise NotImplementedError("Parse method is not implemented in the underlying models.")
+
+    def fine_tune_with_feedback(self, feedback):
+        # Fine-tune all models with user feedback
+        for model in self.models:
+            model.fine_tune_with_feedback(feedback)
+
+    def train_on_new_data(self, new_data):
+        # Train all models on new data incrementally
+        for model in self.models:
+            model.train_on_new_data(new_data)
+
+    def evaluate_model(self):
+        # Evaluate all models and return average performance
+        performances = [model.evaluate_model() for model in self.models]
+        avg_performance = sum(performances) / len(performances)
+        print(f"Ensemble model average performance: {avg_performance}")
+        return avg_performance
