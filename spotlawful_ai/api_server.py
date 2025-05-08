@@ -1,11 +1,39 @@
-
 from flask import Flask, request, jsonify
 from spotlawful_ai.enhanced_legal_ai import EnhancedLegalAI
+from spotlawful_ai.unified_communication_interface import UnifiedCommunicationInterface
+from spotlawful_ai.performance_monitoring import PerformanceMonitor
+from spotlawful_ai.scalability_load_balancing import LoadBalancer
 
 app = Flask(__name__)
 
 # Initialize enhanced legal AI
 enhanced_legal_ai = EnhancedLegalAI()
+
+# Initialize communication interface with example configs
+email_config = {
+    'smtp_server': 'smtp.example.com',
+    'smtp_port': 587,
+    'username': 'user@example.com',
+    'password': 'password'
+}
+sms_config = {
+    'account_sid': 'your_twilio_sid',
+    'auth_token': 'your_twilio_auth_token',
+    'from_number': '+1234567890'
+}
+phone_config = {
+    'account_sid': 'your_twilio_sid',
+    'auth_token': 'your_twilio_auth_token',
+    'from_number': '+1234567890'
+}
+social_config = {
+    'platform': 'twitter',
+    'access_token': 'your_twitter_bearer_token'
+}
+
+comm_interface = UnifiedCommunicationInterface(email_config, sms_config, phone_config, social_config)
+performance_monitor = PerformanceMonitor()
+load_balancer = LoadBalancer(num_workers=4)
 
 # API routes for subscription management
 @app.route('/subscribe', methods=['POST'])
@@ -74,7 +102,22 @@ def deploy():
     enhanced_legal_ai.deploy()
     return jsonify({'message': 'Deployment process initiated.'})
 
+# Example function to handle incoming requests
+def handle_request(user_id, message, subject=None, twiml_url=None):
+    # Distribute request via load balancer
+    load_balancer.distribute_request(message)
+    # Send message via preferred channels
+    comm_interface.send_message(user_id, message, subject, twiml_url)
+    # Record performance metrics (dummy values for example)
+    performance_monitor.record_metric('latency', 0.5)
+    performance_monitor.record_metric('accuracy', 0.9)
+    performance_monitor.record_metric('error_rate', 0.01)
+    performance_monitor.record_metric('user_satisfaction', 0.95)
+
 if __name__ == '__main__':
+    # Start monitoring and load balancer
+    performance_monitor.start_monitoring(interval=60)
+    load_balancer.start()
     # Run with Waitress production server for LAN access
     from waitress import serve
     serve(app, host='0.0.0.0', port=5000)
