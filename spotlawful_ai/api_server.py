@@ -75,4 +75,6 @@ def deploy():
     return jsonify({'message': 'Deployment process initiated.'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Run with Waitress production server for LAN access
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=5000)
