@@ -13,9 +13,7 @@ This document contains curated excerpts and key concepts from the work of David 
 ## Sample Texts
 
 > "The grammar of the law is the grammar of the universe."
-
 > "Quantum Grammar is the only true grammar."
-
 > "Every sentence must be parsed according to the rules of Quantum Grammar."
 
 ## Usage
