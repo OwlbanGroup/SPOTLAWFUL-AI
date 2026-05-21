@@ -1,5 +1,9 @@
-# Script to fix logging_config.py
-content = '''"""
+"""Utility script to rewrite `spotlawful_ai/logging_config.py` with a clean logging implementation."""
+
+from pathlib import Path
+
+
+LOGGING_CONFIG_SOURCE = '''"""
 Logging configuration and utilities for SPOTLAWFUL-AI.
 Provides structured logging with file and console handlers.
 """
@@ -33,26 +37,20 @@ def setup_logging(
     level = getattr(logging, log_level or Config.LOG_LEVEL, logging.INFO)
     filename = log_file or Config.LOG_FILE
 
-    # Create logger
     logger = logging.getLogger("spotlawful_ai")
     logger.setLevel(level)
-
-    # Remove existing handlers
     logger.handlers.clear()
 
-    # Formatter
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # File handler with rotation
     file_handler = RotatingFileHandler(
         filename,
         maxBytes=max_bytes,
@@ -188,7 +186,6 @@ class ModelLogger:
         )
 
 
-# Default logger instance
 logger = setup_logging()
 
 
@@ -197,12 +194,15 @@ def get_logger(name: str) -> StructuredLogger:
     return StructuredLogger(name)
 '''
 
-# Remove any existing placeholder text and fix whitespace
-placeholder = content.replace('^ ', '.').replace('[', '.').replace(']', '.').replace('$', '.')
-content = placeholder.replace('\t', '    ')
 
-# Write to file
-with open('spotlawful_ai/logging_config.py', 'w') as f:
-    f.write(content)
+def main() -> None:
+    """Write the logging configuration source file."""
+    Path("spotlawful_ai/logging_config.py").write_text(
+        LOGGING_CONFIG_SOURCE,
+        encoding="utf-8",
+    )
+    print("File written successfully")
 
-print('File written successfully')
+
+if __name__ == "__main__":
+    main()

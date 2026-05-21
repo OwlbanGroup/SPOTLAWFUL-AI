@@ -33,23 +33,23 @@ def setup_logging(
     filename = log_file or Config.LOG_FILE
 
     # Create logger
-    logger = logging.getLogger("spotlawful_ai")
-    logger.setLevel(level)
+    app_logger = logging.getLogger("spotlawful_ai")
+    app_logger.setLevel(level)
 
     # Remove existing handlers
-    logger.handlers.clear()
+    app_logger.handlers.clear()
 
     # Formatter
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    app_logger.addHandler(console_handler)
 
     # File handler with rotation
     file_handler = RotatingFileHandler(
@@ -59,10 +59,10 @@ def setup_logging(
     )
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    app_logger.addHandler(file_handler)
 
-    logger.info("Logging configured")
-    return logger
+    app_logger.info("Logging configured")
+    return app_logger
 
 
 class StructuredLogger:
