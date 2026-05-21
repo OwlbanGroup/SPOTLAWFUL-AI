@@ -3,3 +3,5 @@ waitress
 pytest
 twilio
 requests
+numpy
+pandas

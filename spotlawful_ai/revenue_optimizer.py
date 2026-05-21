@@ -1,39 +1,57 @@
-import numpy as np
-import pandas as pd
-from sklearn.linear_model import LinearRegression
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
+from typing import Any
+
 
 class RevenueOptimizer:
-    def __init__(self, data):
+    def __init__(self, data: Any):
         self.data = data
 
     def optimize_revenue(self):
-        # Use a simple linear regression model to forecast revenue growth
-        optimized_revenue = self.calculate_optimized_revenue()
-        return optimized_revenue
+        # Use a lightweight trend-based forecast that does not require third-party libraries.
+        return self.calculate_optimized_revenue()
+
+    def _extract_revenue_values(self) -> list[float]:
+        if hasattr(self.data, "columns") and hasattr(self.data, "__getitem__"):
+            if "revenue" not in self.data.columns:
+                raise ValueError("Data must contain 'revenue' column")
+            raw_values = self.data["revenue"]
+        elif isinstance(self.data, Sequence) and not isinstance(self.data, (str, bytes)):
+            try:
+                raw_values = [row["revenue"] for row in self.data]
+            except (TypeError, KeyError):
+                raise ValueError("Data must be a DataFrame-like object or a sequence of records containing 'revenue'")
+        else:
+            raise TypeError("Data must be a DataFrame-like object or a sequence of records containing 'revenue'")
+
+        values = [float(value) for value in list(raw_values)]
+        if not values:
+            raise ValueError("Data must contain at least one revenue value")
+        return values
 
     def calculate_optimized_revenue(self):
-        # Prepare data for regression
-        if 'revenue' not in self.data.columns:
-            raise ValueError("Data must contain 'revenue' column")
-        y = self.data['revenue'].values
-        X = np.arange(len(y)).reshape(-1, 1)  # Time as independent variable
+        y = self._extract_revenue_values()
 
-        # Fit linear regression model
-        model = LinearRegression()
-        model.fit(X, y)
-
-        # Predict next period revenue
-        next_period = np.array([[len(y)]])
-        predicted_revenue = model.predict(next_period)[0]
+        if len(y) == 1:
+            predicted_revenue = y[0]
+        else:
+            x = list(range(len(y)))
+            x_mean = sum(x) / len(x)
+            y_mean = sum(y) / len(y)
+            numerator = sum((x_value - x_mean) * (y_value - y_mean) for x_value, y_value in zip(x, y))
+            denominator = sum((x_value - x_mean) ** 2 for x_value in x)
+            slope = numerator / denominator if denominator else 0.0
+            intercept = y_mean - (slope * x_mean)
+            next_period = float(len(y))
+            predicted_revenue = (slope * next_period) + intercept
 
         # Calculate optimized revenue as predicted revenue plus 10% uplift
-        optimized_revenue = predicted_revenue * 1.10
-        return optimized_revenue
+        return predicted_revenue * 1.10
 
     def generate_report(self):
         optimized_revenue = self.optimize_revenue()
-        report = {
-            'optimized_revenue': optimized_revenue,
-            'details': 'Revenue forecasted using linear regression with 10% uplift.'
+        return {
+            "optimized_revenue": optimized_revenue,
+            "details": "Revenue forecasted using lightweight trend analysis with 10% uplift.",
         }
-        return report

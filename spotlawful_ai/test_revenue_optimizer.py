@@ -1,17 +1,23 @@
-import pandas as pd
-from revenue_optimizer import RevenueOptimizer
+from spotlawful_ai.revenue_optimizer import RevenueOptimizer
 
-# Sample data for testing
-data = {
-    'revenue': [1000, 1500, 2000, 2500, 3000]
-}
-df = pd.DataFrame(data)
 
-# Create an instance of RevenueOptimizer
-optimizer = RevenueOptimizer(df)
+def test_optimize_revenue_with_record_sequence():
+    data = [
+        {"revenue": 1000},
+        {"revenue": 1500},
+        {"revenue": 2000},
+        {"revenue": 2500},
+        {"revenue": 3000},
+    ]
 
-# Run the optimization
-optimized_revenue = optimizer.optimize_revenue()
+    optimizer = RevenueOptimizer(data)
 
-# Print the results
-print("Optimized Revenue:", optimized_revenue)
+    optimized_revenue = optimizer.optimize_revenue()
+
+    assert optimized_revenue > 0
+    assert round(optimized_revenue, 2) == 3850.0
+
+
+if __name__ == "__main__":
+    result = test_optimize_revenue_with_record_sequence()
+    print("Revenue optimizer test passed.")
