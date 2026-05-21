@@ -25,7 +25,7 @@ class RevenueOptimizer:
         else:
             raise TypeError("Data must be a DataFrame-like object or a sequence of records containing 'revenue'")
 
-        values = [float(value) for value in list(raw_values)]
+        values = [float(value) for value in raw_values]
         if not values:
             raise ValueError("Data must contain at least one revenue value")
         return values
