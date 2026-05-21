@@ -1,3 +1,11 @@
+"""
+Spotlawful AI API Server.
+
+This module provides a Flask-based REST API server for the Spotlawful AI system,
+including endpoints for legal analytics, document analysis, AI agents, and
+communication management.
+"""
+
 from flask import Flask, request, jsonify
 
 from spotlawful_ai.agent_protocol import AgentFeedback, AgentRequest
@@ -39,12 +47,15 @@ social_config = {
     "access_token": "your_twitter_bearer_token",
 }
 
-comm_interface = UnifiedCommunicationInterface(email_config, sms_config, phone_config, social_config)
+comm_interface = UnifiedCommunicationInterface(
+    email_config, sms_config, phone_config, social_config
+)
 performance_monitor = PerformanceMonitor()
 load_balancer = LoadBalancer(num_workers=4)
 
 
 def _json_body() -> dict:
+    """Extract and validate JSON body from request."""
     body = request.get_json(silent=True)
     return body if isinstance(body, dict) else {}
 
@@ -52,6 +63,7 @@ def _json_body() -> dict:
 # API routes for subscription management
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
+    """Subscribe a user to the Spotlawful AI service."""
     user_id = _json_body().get("user_id")
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
@@ -61,6 +73,7 @@ def subscribe():
 
 @app.route("/unsubscribe", methods=["POST"])
 def unsubscribe():
+    """Unsubscribe a user from the Spotlawful AI service."""
     user_id = _json_body().get("user_id")
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
@@ -71,6 +84,7 @@ def unsubscribe():
 # API route for legal text analysis
 @app.route("/legal-analytics", methods=["POST"])
 def legal_analytics():
+    """Analyze legal text and provide insights."""
     body = _json_body()
     user_id = body.get("user_id")
     legal_text = body.get("legal_text")
@@ -86,6 +100,7 @@ def legal_analytics():
 # API route for document analysis
 @app.route("/document-analysis", methods=["POST"])
 def document_analysis():
+    """Analyze a legal document and return structured results."""
     document_text = _json_body().get("document_text")
     if not document_text:
         return jsonify({"error": "document_text is required"}), 400
@@ -96,6 +111,7 @@ def document_analysis():
 # Agent endpoints
 @app.route("/agents/document-analysis", methods=["POST"])
 def agent_document_analysis():
+    """Handle document analysis requests via AI agent."""
     body = _json_body()
     request_obj = AgentRequest.from_payload(
         agent_name="document_analysis",
@@ -110,6 +126,7 @@ def agent_document_analysis():
 
 @app.route("/agents/prediction", methods=["POST"])
 def agent_prediction():
+    """Handle prediction requests via AI agent."""
     body = _json_body()
     request_obj = AgentRequest.from_payload(
         agent_name="prediction",
@@ -127,6 +144,7 @@ def agent_prediction():
 
 @app.route("/agents/research", methods=["POST"])
 def agent_research():
+    """Handle research requests via AI agent."""
     body = _json_body()
     request_obj = AgentRequest.from_payload(
         agent_name="research",
@@ -144,6 +162,7 @@ def agent_research():
 
 @app.route("/agents/feedback", methods=["POST"])
 def agent_feedback():
+    """Record feedback for an AI agent's response."""
     body = _json_body()
     agent_name = body.get("agent_name")
     request_id = body.get("request_id")
@@ -151,14 +170,16 @@ def agent_feedback():
     rating = body.get("rating")
 
     if not agent_name or not request_id or not feedback_text:
-        return jsonify({"error": "agent_name, request_id, and feedback are required"}), 400
+        return jsonify({
+            "error": "agent_name, request_id, and feedback are required"
+        }), 400
 
-    feedback = AgentFeedback(
+    feedback_obj = AgentFeedback(
         agent_name=agent_name,
         request_id=request_id,
         feedback=feedback_text,
         rating=rating,
-        metadata=body.get("metadata", {}),
+        metadata=body.get("metadata", {})
     )
 
     agent_map = {
@@ -170,7 +191,7 @@ def agent_feedback():
     if agent is None:
         return jsonify({"error": f"Unknown agent: {agent_name}"}), 404
 
-    agent.record_feedback(feedback)
+    agent.record_feedback(feedback_obj)
     return jsonify(
         {
             "message": "Feedback recorded successfully.",
@@ -183,37 +204,51 @@ def agent_feedback():
 # API route for revenue optimization report
 @app.route("/optimize-revenue", methods=["GET"])
 def optimize_revenue():
+    """Generate and return a revenue optimization report."""
     report = enhanced_legal_ai.optimize_revenue()
     return jsonify(report)
 
 
 # API route for collecting user feedback
 @app.route("/feedback", methods=["POST"])
-def feedback():
-    feedback_text = _json_body().get("feedback")
-    if not feedback_text:
+def submit_feedback():
+    """Collect general user feedback for the system."""
+    user_feedback = _json_body().get("feedback")
+    if not user_feedback:
         return jsonify({"error": "feedback is required"}), 400
-    enhanced_legal_ai.collect_user_feedback(feedback_text)
+    enhanced_legal_ai.collect_user_feedback(user_feedback)
     return jsonify({"message": "Feedback received. Thank you!"})
 
 
 # API route for continuous learning update
 @app.route("/continuous-learning", methods=["POST"])
 def continuous_learning():
+    """Update the AI model with new legal cases for continuous learning."""
     new_cases = _json_body().get("new_legal_cases", [])
     enhanced_legal_ai.continuous_learning_update(new_cases)
-    return jsonify({"message": f"Continuous learning updated with {len(new_cases)} new cases."})
+    return jsonify({
+        "message": f"Continuous learning updated with {len(new_cases)} new cases."
+    })
 
 
 # API route for deployment trigger (optional)
 @app.route("/deploy", methods=["POST"])
 def deploy():
+    """Trigger a deployment process for the AI system."""
     enhanced_legal_ai.deploy()
     return jsonify({"message": "Deployment process initiated."})
 
 
 # Example function to handle incoming requests
 def handle_request(user_id, message, subject=None, twiml_url=None):
+    """Handle incoming requests by distributing via load balancer and sending messages.
+
+    Args:
+        user_id: The user identifier
+        message: The message content
+        subject: Optional subject line for email messages
+        twiml_url: Optional TwiML URL for phone calls
+    """
     # Distribute request via load balancer
     load_balancer.distribute_request(message)
     # Send message via preferred channels
@@ -230,6 +265,6 @@ if __name__ == "__main__":
     performance_monitor.start_monitoring(interval=60)
     load_balancer.start()
     # Run with Waitress production server for LAN access
-    from waitress import serve
+    from waitress import serve  # type: ignore[import-untyped]
 
     serve(app, host="0.0.0.0", port=5000)
