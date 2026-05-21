@@ -5,3 +5,6 @@ twilio
 requests
 numpy
 pandas
+torch
+transformers
+scikit-learn
