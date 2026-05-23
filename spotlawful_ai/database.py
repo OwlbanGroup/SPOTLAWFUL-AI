@@ -7,7 +7,7 @@ import json
 import logging
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from spotlawful_ai.config import Config
 
@@ -45,7 +45,7 @@ class Database:
         """Create tables if they don't exist."""
         with self._transaction() as conn:
             cursor = conn.cursor()
-            
+
             # Users table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -56,7 +56,7 @@ class Database:
                     is_active INTEGER DEFAULT 1
                 )
             """)
-            
+
             # Subscriptions table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -69,7 +69,7 @@ class Database:
                     FOREIGN KEY (user_id) REFERENCES users(user_id)
                 )
             """)
-            
+
             # User feedback table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS user_feedback (
@@ -81,7 +81,7 @@ class Database:
                     FOREIGN KEY (user_id) REFERENCES users(user_id)
                 )
             """)
-            
+
             # Legal analytics table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS legal_analytics (
@@ -93,7 +93,7 @@ class Database:
                     FOREIGN KEY (user_id) REFERENCES users(user_id)
                 )
             """)
-            
+
             # API keys table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS api_keys (
@@ -108,7 +108,7 @@ class Database:
                     FOREIGN KEY (user_id) REFERENCES users(user_id)
                 )
             """)
-            
+
             # Rate limiting table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS rate_limits (
@@ -119,7 +119,63 @@ class Database:
                     UNIQUE(identifier)
                 )
             """)
-            
+
+            # Audit logs table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT,
+                    action TEXT NOT NULL,
+                    resource TEXT,
+                    method TEXT,
+                    path TEXT,
+                    ip_address TEXT,
+                    status_code INTEGER,
+                    metadata_json TEXT,
+                    created_at TEXT NOT NULL
+                )
+            """)
+
+            # Asset inventory table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS asset_inventory (
+                    asset_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    owner_id TEXT NOT NULL,
+                    asset_name TEXT NOT NULL,
+                    asset_type TEXT NOT NULL,
+                    classification TEXT DEFAULT 'standard',
+                    encrypted_payload TEXT,
+                    metadata_json TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(owner_id, asset_name, asset_type)
+                )
+            """)
+
+            # Access control list table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS asset_acl (
+                    acl_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    asset_id INTEGER NOT NULL,
+                    principal_id TEXT NOT NULL,
+                    permission TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (asset_id) REFERENCES asset_inventory(asset_id) ON DELETE CASCADE,
+                    UNIQUE(asset_id, principal_id, permission)
+                )
+            """)
+
+            # Backup snapshots table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS asset_backups (
+                    backup_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    asset_id INTEGER NOT NULL,
+                    snapshot_payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (asset_id) REFERENCES asset_inventory(asset_id) ON DELETE CASCADE
+                )
+            """)
+
             logger.info("Database schema initialized")
 
     # User operations
@@ -156,10 +212,12 @@ class Database:
         end_date = None
         if duration_days:
             end_date = (now + timedelta(days=duration_days)).isoformat()
-        
+
+
         # Ensure user exists
         self.create_user(user_id)
-        
+
+
         with self._transaction() as conn:
             cursor = conn.cursor()
             # Deactivate old subscriptions
@@ -173,7 +231,7 @@ class Database:
                    VALUES (?, ?, ?, ?, 1)""",
                 (user_id, plan_type, start_date, end_date)
             )
-            logger.info(f"User {user_id} subscribed to {plan_type}")
+            logger.info("User %s subscribed to %s", user_id, plan_type)
             return True
 
     def unsubscribe_user(self, user_id: str) -> bool:
@@ -184,7 +242,7 @@ class Database:
                 "UPDATE subscriptions SET is_active = 0 WHERE user_id = ? AND is_active = 1",
                 (user_id,)
             )
-            logger.info(f"User {user_id} unsubscribed")
+            logger.info("User %s unsubscribed", user_id)
             return cursor.rowcount > 0
 
     def is_subscribed(self, user_id: str) -> bool:
@@ -192,8 +250,8 @@ class Database:
         with self._transaction() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT is_active FROM subscriptions 
-                   WHERE user_id = ? AND is_active = 1 
+                """SELECT is_active FROM subscriptions
+                   WHERE user_id = ? AND is_active = 1
                    AND (end_date IS NULL OR end_date > ?)""",
                 (user_id, datetime.utcnow().isoformat())
             )
@@ -215,7 +273,7 @@ class Database:
                    VALUES (?, ?, ?, ?)""",
                 (user_id, feedback_text, rating, now)
             )
-            logger.info(f"Feedback added: {cursor.lastrowid}")
+            logger.info("Feedback added: %s", cursor.lastrowid)
             return cursor.lastrowid
 
     def get_feedback(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -259,7 +317,8 @@ class Database:
         now = datetime.utcnow()
         created_at = now.isoformat()
         expires_at = (now + timedelta(days=duration_days)).isoformat()
-        
+
+
         with self._transaction() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -267,7 +326,7 @@ class Database:
                    VALUES (?, ?, ?, ?, ?, 1)""",
                 (user_id, api_key, name, created_at, expires_at)
             )
-            logger.info(f"API key created for user {user_id}")
+            logger.info("API key created for user %s", user_id)
             return api_key
 
     def validate_api_key(self, api_key: str) -> Optional[str]:
@@ -275,8 +334,8 @@ class Database:
         with self._transaction() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT user_id FROM api_keys 
-                   WHERE api_key = ? AND is_active = 1 
+                """SELECT user_id FROM api_keys
+                   WHERE api_key = ? AND is_active = 1
                    AND (expires_at IS NULL OR expires_at > ?)""",
                 (api_key, datetime.utcnow().isoformat())
             )
@@ -294,64 +353,258 @@ class Database:
     def check_rate_limit(self, identifier: str, limit: int, window_seconds: int) -> bool:
         """Check if identifier is within rate limit."""
         now = datetime.utcnow()
-        window_start = now.replace(second=now.second - window_seconds)
-        
+        active_window_start = now - timedelta(seconds=window_seconds)
+
         with self._transaction() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT request_count FROM rate_limits 
-                   WHERE identifier = ? AND window_start > ?""",
-                (identifier, window_start.isoformat())
+                "SELECT request_count, window_start FROM rate_limits WHERE identifier = ?",
+                (identifier,)
             )
             row = cursor.fetchone()
-            
-            if row and row["request_count"] >= limit:
+
+            if not row:
+                cursor.execute(
+                    (
+                        "INSERT INTO rate_limits "
+                        "(identifier, request_count, window_start) VALUES (?, ?, ?)"
+                    ),
+                    (identifier, 1, now.isoformat()),
+                )
+                return True
+
+            stored_window_start = datetime.fromisoformat(row["window_start"])
+            request_count = int(row["request_count"])
+
+            if stored_window_start < active_window_start:
+                cursor.execute(
+                    (
+                        "UPDATE rate_limits SET request_count = ?, window_start = ? "
+                        "WHERE identifier = ?"
+                    ),
+                    (1, now.isoformat(), identifier),
+                )
+                return True
+
+            if request_count >= limit:
                 return False
-            
-            # Update or insert rate limit
+
             cursor.execute(
-                """INSERT INTO rate_limits (identifier, request_count, window_start)
-                   VALUES (?, 1, ?)
-                   ON CONFLICT(identifier) DO UPDATE SET
-                   request_count = request_count + 1""",
-                (identifier, now.isoformat())
+                "UPDATE rate_limits SET request_count = request_count + 1 WHERE identifier = ?",
+                (identifier,)
             )
             return True
+
+
+    # Audit logging
+    def add_audit_log(
+        self,
+        action: str,
+        resource: Optional[str] = None,
+        user_id: Optional[str] = None,
+        method: Optional[str] = None,
+        path: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        status_code: Optional[int] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> int:
+        """Add an audit log entry for request/response activity."""
+        now = datetime.utcnow().isoformat()
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO audit_logs
+                (user_id, action, resource, method, path, ip_address, status_code, metadata_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    user_id,
+                    action,
+                    resource,
+                    method,
+                    path,
+                    ip_address,
+                    status_code,
+                    json.dumps(metadata or {}),
+                    now,
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    # Asset protection helpers
+    def upsert_asset(
+        self,
+        owner_id: str,
+        asset_name: str,
+        asset_type: str,
+        classification: str = "standard",
+        encrypted_payload: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> int:
+        """Create or update an asset inventory record and return its ID."""
+        now = datetime.utcnow().isoformat()
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT asset_id FROM asset_inventory
+                   WHERE owner_id = ? AND asset_name = ? AND asset_type = ?""",
+                (owner_id, asset_name, asset_type),
+            )
+            row = cursor.fetchone()
+            if row:
+                cursor.execute(
+                    """UPDATE asset_inventory
+                       SET classification = ?, encrypted_payload = ?, metadata_json = ?, updated_at = ?
+                       WHERE asset_id = ?""",
+                    (
+                        classification,
+                        encrypted_payload,
+                        json.dumps(metadata or {}),
+                        now,
+                        row["asset_id"],
+                    ),
+                )
+                return int(row["asset_id"])
+
+            cursor.execute(
+                """INSERT INTO asset_inventory
+                (owner_id, asset_name, asset_type, classification, encrypted_payload,
+                 metadata_json, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    owner_id,
+                    asset_name,
+                    asset_type,
+                    classification,
+                    encrypted_payload,
+                    json.dumps(metadata or {}),
+                    now,
+                    now,
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def get_asset_by_id(self, asset_id: int) -> Optional[Dict[str, Any]]:
+        """Fetch asset inventory row by ID."""
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM asset_inventory WHERE asset_id = ?",
+                (asset_id,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def add_asset_acl(self, asset_id: int, principal_id: str, permission: str) -> int:
+        """Create or ignore ACL permission for an asset principal."""
+        now = datetime.utcnow().isoformat()
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                (
+                    "INSERT OR IGNORE INTO asset_acl "
+                    "(asset_id, principal_id, permission, created_at) "
+                    "VALUES (?, ?, ?, ?)"
+                ),
+                (asset_id, principal_id, permission, now),
+            )
+            if cursor.lastrowid:
+                return int(cursor.lastrowid)
+
+            cursor.execute(
+                """SELECT acl_id FROM asset_acl
+                   WHERE asset_id = ? AND principal_id = ? AND permission = ?""",
+                (asset_id, principal_id, permission),
+            )
+            existing = cursor.fetchone()
+            return int(existing["acl_id"]) if existing else 0
+
+    def list_asset_acl(self, asset_id: int) -> List[Dict[str, Any]]:
+        """List ACL permissions for an asset."""
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT acl_id, asset_id, principal_id, permission, created_at
+                   FROM asset_acl
+                   WHERE asset_id = ?
+                   ORDER BY created_at DESC""",
+                (asset_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def create_asset_backup(self, asset_id: int, snapshot_payload: str) -> int:
+        """Create a backup snapshot for an asset."""
+        now = datetime.utcnow().isoformat()
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO asset_backups (asset_id, snapshot_payload, created_at)
+                   VALUES (?, ?, ?)""",
+                (asset_id, snapshot_payload, now),
+            )
+            return int(cursor.lastrowid)
+
+    def list_asset_backups(self, asset_id: int) -> List[Dict[str, Any]]:
+        """List backup snapshots for an asset."""
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT backup_id, asset_id, snapshot_payload, created_at
+                   FROM asset_backups
+                   WHERE asset_id = ?
+                   ORDER BY created_at DESC""",
+                (asset_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def recover_asset_from_backup(self, backup_id: int) -> Optional[int]:
+        """Recover an asset encrypted payload using a backup snapshot."""
+        now = datetime.utcnow().isoformat()
+        with self._transaction() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT asset_id, snapshot_payload FROM asset_backups WHERE backup_id = ?",
+                (backup_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            cursor.execute(
+                """UPDATE asset_inventory
+                   SET encrypted_payload = ?, updated_at = ?
+                   WHERE asset_id = ?""",
+                (row["snapshot_payload"], now, row["asset_id"]),
+            )
+            return int(row["asset_id"])
 
 
 # Singleton database instance
 db = Database()
 
 
-# Import timedelta for subscription calculations
-from datetime import timedelta
-
-
-def init_database():
-    """Initialize database - call at application startup."""
-    global db
-    db = Database()
-    logger.info("Database initialized")
+def init_database() -> Database:
+    """Initialize and return a fresh database instance."""
+    return Database()
 
 
 if __name__ == "__main__":
     # Test database operations
     logging.basicConfig(level=logging.INFO)
-    init_database()
-    
+    demo_db = init_database()
+
     # Test user operations
-    db.create_user("test_user", "test@example.com")
-    print(f"User created: {db.get_user('test_user')}")
-    
+    demo_db.create_user("test_user", "test@example.com")
+    print("User created:", demo_db.get_user("test_user"))
+
     # Test subscription
-    db.subscribe_user("test_user", "premium", 30)
-    print(f"Is subscribed: {db.is_subscribed('test_user')}")
-    
+    demo_db.subscribe_user("test_user", "premium", 30)
+    print("Is subscribed:", demo_db.is_subscribed("test_user"))
+
     # Test feedback
-    db.add_feedback("test_user", "Great service!", 5)
-    print(f"Feedback: {db.get_feedback()}")
-    
+    demo_db.add_feedback("test_user", "Great service!", 5)
+    print("Feedback:", demo_db.get_feedback())
+
     # Test API key
-    key = db.create_api_key("test_user", "test-key")
-    print(f"API Key: {key}")
-    print(f"Validated: {db.validate_api_key(key)}")
+    DEMO_KEY = demo_db.create_api_key("test_user", "test-key")
+    print("API Key:", DEMO_KEY)
+    print("Validated:", demo_db.validate_api_key(DEMO_KEY))
